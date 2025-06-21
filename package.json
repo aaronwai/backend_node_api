@@ -1,0 +1,32 @@
+{
+  "name": "backend-api-proj",
+  "version": "1.0.0",
+  "description": "backend api project",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "NODE_ENV=production node server.js",
+    "dev": "NODE_ENV=development nodemon server.js"
+  },
+  "engines": {
+    "node": "22.15.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "node_backend_api"
+  },
+  "keywords": [
+    "node",
+    "backend",
+    "api"
+  ],
+  "author": "aaron wai",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
