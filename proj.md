@@ -609,3 +609,70 @@ app.listen(PORT, () => {
 ```
 
 8. testing the api in postman
+
+# step 6 : refactor into controllers
+
+1. create controllers folder and name the file as `bootcamps.js`
+2. move the routes to bootcamps.js, add description for each response
+
+```js
+// @desc Get all bootcamps
+// @route GET /api/v1/bootcamps
+// @access Public
+export const getBootcamps = (req, res, next) => {
+  res.status(200).json({ success: true, msg: "Show all bootcamps" });
+};
+
+// @desc Get  bootcamp
+// @route GET /api/v1/bootcamp/:id
+// @access Public
+export const getBootcamp = (req, res, next) => {
+  res.status(200).json({ success: true, msg: "display bootcamp" });
+};
+
+// @desc Create new bootcamp
+// @route POST /api/v1/bootcamps
+// @access Private
+export const createBootcamp = (req, res, next) => {
+  res.status(200).json({ success: true, msg: "Create new bootcamp" });
+};
+
+// @desc Update bootcamp
+// @route PUT /api/v1/bootcamps/:id
+// @access Private
+export const updateBootcamp = (req, res, next) => {
+  res.status(200).json({ success: true, msg: "Update bootcamp" });
+};
+
+// @desc Delete bootcamp
+// @route DELETE /api/v1/bootcamps/:id
+// @access Private
+export const deleteBootcamp = (req, res, next) => {
+  res.status(200).json({ success: true, msg: "delete bootcamp" });
+};
+```
+
+3. refactor the routes res.
+
+```js
+import express from "express";
+import {
+  getBootcamp,
+  getBootcamps,
+  createBootcamp,
+  updateBootcamp,
+  deleteBootcamp,
+} from "../controllers/bootcamps.js";
+const router = express.Router();
+router.route("/").get(getBootcamps).post(createBootcamp);
+
+router
+  .route("/:id")
+  .get(getBootcamp)
+  .put(updateBootcamp)
+  .delete(deleteBootcamp);
+
+export default router;
+```
+
+4. testing the api in postman
