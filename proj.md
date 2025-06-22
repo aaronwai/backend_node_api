@@ -2331,3 +2331,242 @@ process.on("unhandledRejection", (err, promise) => {
 1. create models folder
 2. create bootcamps.js
 3. create bootcamp model
+
+```js
+import mongoose from "mongoose";
+const BootcampSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, "Please add a name"],
+    unique: true,
+    trim: true,
+    maxlength: [50, "Name can not be more than 50 characters"],
+  },
+  slug: String,
+  description: {
+    type: String,
+    required: [true, "Please add a description"],
+    maxlength: [500, "Description can not be more than 500 characters"],
+  },
+  website: {
+    type: String,
+    match: [
+      /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/,
+      "Please use a valid URL with HTTP or HTTPS",
+    ],
+  },
+  phone: {
+    type: String,
+    maxlength: [20, "Phone number can not be longer than 20 characters"],
+  },
+  email: {
+    type: String,
+    match: [
+      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+      "Please add a valid email",
+    ],
+  },
+  address: {
+    type: String,
+    required: [true, "Please add an address"],
+  },
+  location: {
+    // GeoJSON Point
+    type: {
+      type: String,
+      enum: ["Point"],
+      required: true,
+    },
+    coordinates: {
+      type: [Number],
+      index: "2dsphere",
+      required: true,
+    },
+    formattedAddress: String,
+    street: String,
+    city: String,
+    state: String,
+    zipcode: String,
+    country: String,
+  },
+  careers: {
+    // Array of strings
+    type: [String],
+    required: true,
+    enum: [
+      "Web Development",
+      "Mobile Development",
+      "UI/UX",
+      "Data Science",
+      "Business",
+      "Other",
+    ],
+  },
+  averageRating: {
+    type: Number,
+    min: [1, "Rating must be at least 1"],
+    max: [10, "Rating must can not be more than 10"],
+  },
+  averageCost: Number,
+  photo: {
+    type: String,
+    default: "no-photo.jpg",
+  },
+  housing: {
+    type: Boolean,
+    default: false,
+  },
+  jobAssistance: {
+    type: Boolean,
+    default: false,
+  },
+  jobGuarantee: {
+    type: Boolean,
+    default: false,
+  },
+  acceptGi: {
+    type: Boolean,
+    default: false,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+export default mongoose.model("Bootcamp", BootcampSchema);
+```
+
+# Step 16 : bootcamp crud
+
+1. back to controllers folder->bootcamps.js, insert bootcamp model
+
+```js
+import Bootcamp from "../models/Bootcamp.js";
+// @desc Get all bootcamps
+// @route GET /api/v1/bootcamps
+// @access Public
+export const getBootcamps = (req, res, next) => {
+  res.status(200).json({ success: true, msg: "Show all bootcamps" });
+};
+
+// @desc Get  bootcamp
+// @route GET /api/v1/bootcamp/:id
+// @access Public
+export const getBootcamp = (req, res, next) => {
+  res.status(200).json({ success: true, msg: "display bootcamp" });
+};
+
+// @desc Create new bootcamp
+// @route POST /api/v1/bootcamps
+// @access Private
+export const createBootcamp = (req, res, next) => {
+  console.log(req.body);
+  res.status(200).json({ success: true, msg: "Create new bootcamp" });
+};
+
+// @desc Update bootcamp
+// @route PUT /api/v1/bootcamps/:id
+// @access Private
+export const updateBootcamp = (req, res, next) => {
+  res.status(200).json({ success: true, msg: "Update bootcamp" });
+};
+
+// @desc Delete bootcamp
+// @route DELETE /api/v1/bootcamps/:id
+// @access Private
+export const deleteBootcamp = (req, res, next) => {
+  res.status(200).json({ success: true, msg: "delete bootcamp" });
+};
+```
+
+2. postman, workon Post, create a new preset for the header (7.png) that can help saving time to type in the same content type
+3. in the body, copy one of the record and paste into the body
+4. in the server.js, need to add body parser
+
+```js
+import express from "express";
+import dotenv from "dotenv";
+import connectDB from "./config/db.js";
+import bootcamps from "./routes/bootcamps.js";
+// import { logger } from "./middleware/logger.js";
+import { coloredMorgan } from "./middleware/morganConfig.js";
+
+// load env variables
+dotenv.config({ path: "./config/config.env" });
+
+// connect to database
+connectDB();
+const app = express();
+
+// # body parser
+app.use(express.json());
+
+// colored morgan
+if (process.env.NODE_ENV === "development") {
+  app.use(coloredMorgan());
+}
+
+// mount routers
+app.use("/api/v1/bootcamps", bootcamps);
+const PORT = process.env.PORT || 5001;
+
+const server = app.listen(PORT, () => {
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+});
+
+// Handle unhandled promise rejections in case mongoose fails
+process.on("unhandledRejection", (err, promise) => {
+  console.log(`Error: ${err.message}`);
+  // Close server & exit process
+  server.close(() => process.exit(1));
+});
+```
+
+5. the data show be in the console
+6. refactor the controller by adding the data into database
+7. data should be inserted inside mongoDB
+8. in case there is error, we add try catch for the time being, later will add error handling
+
+```js
+import Bootcamp from "../models/Bootcamp.js";
+// @desc Get all bootcamps
+// @route GET /api/v1/bootcamps
+// @access Public
+export const getBootcamps = (req, res, next) => {
+  res.status(200).json({ success: true, msg: "Show all bootcamps" });
+};
+
+// @desc Get  bootcamp
+// @route GET /api/v1/bootcamp/:id
+// @access Public
+export const getBootcamp = (req, res, next) => {
+  res.status(200).json({ success: true, msg: "display bootcamp" });
+};
+
+// @desc Create new bootcamp
+// @route POST /api/v1/bootcamps
+// @access Private
+export const createBootcamp = async (req, res, next) => {
+  try {
+    const bootcamp = await Bootcamp.create(req.body);
+    res.status(201).json({ success: true, data: bootcamp });
+  } catch (error) {
+    res.status(400).json({ success: false });
+  }
+};
+
+// @desc Update bootcamp
+// @route PUT /api/v1/bootcamps/:id
+// @access Private
+export const updateBootcamp = (req, res, next) => {
+  res.status(200).json({ success: true, msg: "Update bootcamp" });
+};
+
+// @desc Delete bootcamp
+// @route DELETE /api/v1/bootcamps/:id
+// @access Private
+export const deleteBootcamp = (req, res, next) => {
+  res.status(200).json({ success: true, msg: "delete bootcamp" });
+};
+```

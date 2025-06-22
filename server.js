@@ -11,6 +11,9 @@ dotenv.config({ path: "./config/config.env" });
 // connect to database
 connectDB();
 const app = express();
+
+// body parser
+app.use(express.json());
 // add middleware
 // app.use(logger);
 // Dev logging middleware
