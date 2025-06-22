@@ -1,19 +1,34 @@
 import express from "express";
 import dotenv from "dotenv";
-
+import connectDB from "./config/db.js";
 import bootcamps from "./routes/bootcamps.js";
-import { logger } from "./middleware/logger.js";
+// import { logger } from "./middleware/logger.js";
+import { coloredMorgan } from "./middleware/morganConfig.js";
 
 // load env variables
 dotenv.config({ path: "./config/config.env" });
+
+// connect to database
+connectDB();
 const app = express();
 // add middleware
-app.use(logger);
+// app.use(logger);
+// Dev logging middleware
+if (process.env.NODE_ENV === "development") {
+  app.use(coloredMorgan());
+}
 
 // mount routers
 app.use("/api/v1/bootcamps", bootcamps);
 const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+});
+
+// Handle unhandled promise rejections in case mongoose fails
+process.on("unhandledRejection", (err, promise) => {
+  console.log(`Error: ${err.message}`);
+  // Close server & exit process
+  server.close(() => process.exit(1));
 });
