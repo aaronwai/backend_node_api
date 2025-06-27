@@ -4,7 +4,7 @@ import connectDB from "./config/db.js";
 import bootcamps from "./routes/bootcamps.js";
 // import { logger } from "./middleware/logger.js";
 import { coloredMorgan } from "./middleware/morganConfig.js";
-
+import errorHandler from "./middleware/error.js";
 // load env variables
 dotenv.config({ path: "./config/config.env" });
 
@@ -23,6 +23,9 @@ if (process.env.NODE_ENV === "development") {
 
 // mount routers
 app.use("/api/v1/bootcamps", bootcamps);
+
+// error handler
+app.use(errorHandler);
 const PORT = process.env.PORT || 5001;
 
 const server = app.listen(PORT, () => {

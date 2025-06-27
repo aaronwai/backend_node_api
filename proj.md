@@ -2732,3 +2732,154 @@ export const deleteBootcamp = async (req, res, next) => {
   }
 };
 ```
+
+# step 19 : middlewares
+
+1. from one of the CRUD function, add next()
+
+```js
+import Bootcamp from "../models/Bootcamp.js";
+// @desc Get all bootcamps
+// @route GET /api/v1/bootcamps
+// @access Public
+export const getBootcamps = async (req, res, next) => {
+  try {
+    const bootcamps = await Bootcamp.find();
+    res
+      .status(200)
+      .json({ success: true, count: bootcamps.length, data: bootcamps });
+  } catch (error) {}
+  res.status(400).json({ success: false });
+};
+
+// @desc Get  bootcamp
+// @route GET /api/v1/bootcamp/:id
+// @access Public
+export const getBootcamp = async (req, res, next) => {
+  try {
+    const bootcamp = await Bootcamp.findById(req.params.id);
+    if (!bootcamp) {
+      return res.status(400).json({ success: false });
+    }
+    res.status(200).json({ success: true, data: bootcamp });
+  } catch (error) {
+    // res.status(400).json({ success: false });
+    next(error); // add next for the middlewares and pass error
+  }
+};
+
+// @desc Create new bootcamp
+// @route POST /api/v1/bootcamps
+// @access Private
+export const createBootcamp = async (req, res, next) => {
+  try {
+    const bootcamp = await Bootcamp.create(req.body);
+    res.status(201).json({ success: true, data: bootcamp });
+  } catch (error) {
+    res.status(400).json({ success: false });
+  }
+};
+
+// @desc Update bootcamp
+// @route PUT /api/v1/bootcamps/:id
+// @access Private
+export const updateBootcamp = async (req, res, next) => {
+  const bootcamp = await Bootcamp.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+    runValidators: true,
+  });
+  if (!bootcamp) {
+    return res.status(400).json({ success: false });
+  }
+  res.status(200).json({ success: true, data: bootcamp });
+};
+
+// @desc Delete bootcamp
+// @route DELETE /api/v1/bootcamps/:id
+// @access Private
+export const deleteBootcamp = async (req, res, next) => {
+  try {
+    const bootcamp = await Bootcamp.findByIdAndDelete(req.params.id);
+    if (!bootcamp) {
+      return res.status(400).json({ success: false });
+    }
+    res.status(200).json({ success: true, data: bootcamp });
+  } catch (error) {
+    return res.status(400).json({ success: false });
+  }
+};
+```
+
+2. replace res.status(400).json({ success: false }); with next(error) in getBootcamp,
+3. testing the api by pasting a wrong id, the return will be http message, we want to change the error to our error handler
+4. add error.js inside middleware folder
+
+```js
+import chalk from "chalk";
+const errorHandler = (err, req, res, next) => {
+  // log to console for dev
+  console.log(chalk.red(err.stack));
+
+  res.status(500).json({
+    success: false,
+    error: err.message,
+  });
+};
+
+export default errorHandler;
+```
+
+5. in the server.js add the app.use() under the router, it is the router generate error
+
+```js
+import express from "express";
+import dotenv from "dotenv";
+import connectDB from "./config/db.js";
+import bootcamps from "./routes/bootcamps.js";
+// import { logger } from "./middleware/logger.js";
+import { coloredMorgan } from "./middleware/morganConfig.js";
+// add error handler file
+import errorHandler from "./middleware/error.js";
+// load env variables
+dotenv.config({ path: "./config/config.env" });
+
+// connect to database
+connectDB();
+const app = express();
+
+// body parser
+app.use(express.json());
+// add middleware
+// app.use(logger);
+// Dev logging middleware
+if (process.env.NODE_ENV === "development") {
+  app.use(coloredMorgan());
+}
+
+// mount routers
+app.use("/api/v1/bootcamps", bootcamps);
+
+// add error handler
+app.use(errorHandler);
+const PORT = process.env.PORT || 5001;
+
+const server = app.listen(PORT, () => {
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+});
+
+// Handle unhandled promise rejections in case mongoose fails
+process.on("unhandledRejection", (err, promise) => {
+  console.log(`Error: ${err.message}`);
+  // Close server & exit process
+  server.close(() => process.exit(1));
+});
+```
+
+6. the error message will be shown in the postman
+
+```
+   {
+   "success": false,
+   "error": "Cast to ObjectId failed for value \"68581838b084c1b88d0ec\" (type string) at path \"\_id\" for model \"Bootcamp\""
+   }
+```
