@@ -2594,8 +2594,9 @@ export const getBootcamps = async (req, res, next) => {
   try {
     const bootcamps = await Bootcamp.find();
     res.status(200).json({ success: true, data: bootcamps });
-  } catch (error) {}
-  res.status(400).json({ success: false });
+  } catch (error) {
+    res.status(400).json({ success: false });
+  }
 };
 
 // @desc Get  bootcamp
@@ -2672,8 +2673,9 @@ export const getBootcamps = async (req, res, next) => {
     res
       .status(200)
       .json({ success: true, count: bootcamps.length, data: bootcamps });
-  } catch (error) {}
-  res.status(400).json({ success: false });
+  } catch (error) {
+    res.status(400).json({ success: false });
+  }
 };
 
 // @desc Get  bootcamp
@@ -2748,8 +2750,9 @@ export const getBootcamps = async (req, res, next) => {
     res
       .status(200)
       .json({ success: true, count: bootcamps.length, data: bootcamps });
-  } catch (error) {}
-  res.status(400).json({ success: false });
+  } catch (error) {
+    res.status(400).json({ success: false });
+  }
 };
 
 // @desc Get  bootcamp
@@ -2882,4 +2885,102 @@ process.on("unhandledRejection", (err, promise) => {
    "success": false,
    "error": "Cast to ObjectId failed for value \"68581838b084c1b88d0ec\" (type string) at path \"\_id\" for model \"Bootcamp\""
    }
+```
+
+# step 20 : error class
+
+1. create utils folder at the root
+2. errorResponse.js
+
+```js
+class ErrorResponse extends Error {
+  constructor(message, statusCode) {
+    super(message);
+    this.statusCode = statusCode;
+  }
+}
+
+export default ErrorResponse;
+```
+
+3. bootcamps.js change the error message
+
+```js
+import Bootcamp from "../models/Bootcamp.js";
+import ErrorResponse from "../utils/errorResponse.js";
+// @desc Get all bootcamps
+// @route GET /api/v1/bootcamps
+// @access Public
+export const getBootcamps = async (req, res, next) => {
+  try {
+    const bootcamps = await Bootcamp.find();
+    res
+      .status(200)
+      .json({ success: true, count: bootcamps.length, data: bootcamps });
+  } catch (error) {
+    res.status(400).json({ success: false });
+  }
+};
+
+// @desc Get  bootcamp
+// @route GET /api/v1/bootcamp/:id
+// @access Public
+export const getBootcamp = async (req, res, next) => {
+  try {
+    const bootcamp = await Bootcamp.findById(req.params.id);
+    if (!bootcamp) {
+      // replace simply error to custom error
+      return next(
+        new ErrorResponse(`Bootcamp not found with id of ${req.params.id}`, 404)
+      );
+    }
+    res.status(200).json({ success: true, data: bootcamp });
+  } catch (error) {
+    // replace simply error to custom error
+    next(
+      new ErrorResponse(`Bootcamp not found with id of ${req.params.id}`, 404)
+    );
+  }
+};
+
+// @desc Create new bootcamp
+// @route POST /api/v1/bootcamps
+// @access Private
+export const createBootcamp = async (req, res, next) => {
+  try {
+    const bootcamp = await Bootcamp.create(req.body);
+    res.status(201).json({ success: true, data: bootcamp });
+  } catch (error) {
+    res.status(400).json({ success: false });
+  }
+};
+
+// @desc Update bootcamp
+// @route PUT /api/v1/bootcamps/:id
+// @access Private
+export const updateBootcamp = async (req, res, next) => {
+  const bootcamp = await Bootcamp.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+    runValidators: true,
+  });
+  if (!bootcamp) {
+    return res.status(400).json({ success: false });
+  }
+  res.status(200).json({ success: true, data: bootcamp });
+};
+
+// @desc Delete bootcamp
+// @route DELETE /api/v1/bootcamps/:id
+// @access Private
+export const deleteBootcamp = async (req, res, next) => {
+  try {
+    const bootcamp = await Bootcamp.findByIdAndDelete(req.params.id);
+    if (!bootcamp) {
+      return res.status(400).json({ success: false });
+    }
+    res.status(200).json({ success: true, data: bootcamp });
+  } catch (error) {
+    return res.status(400).json({ success: false });
+  }
+};
 ```
