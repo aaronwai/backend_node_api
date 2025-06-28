@@ -3471,3 +3471,320 @@ if (!bootcamp) {
   );
 }
 ```
+
+# Step 23 : validation middleware
+
+**MongoDB Driver:**
+
+```javascript
+{
+  name: 'MongoServerError',
+  code: 11000,  // Duplicate key error
+  keyValue: { email: 'user@exists.com' },
+  status: 409
+}
+```
+
+1. for duplicate value, the error type is different than the CastError
+2. the error code is 11000
+
+let's break down what a Mongoose error is.
+
+**Mongoose** is an Object Data Modeling (ODM) library for **MongoDB** and **Node.js**. It provides a structured way to interact with MongoDB databases. When you define your data models using Mongoose schemas, Mongoose helps you validate data, perform schema enforcement, and manage relationships between different data entities.
+
+**Mongoose errors** are objects returned by Mongoose when something goes wrong during these interactions. These errors contain information about _what_ went wrong, _where_ it happened (often related to a specific model or operation), and sometimes _why_.
+
+Mongoose errors are typically instances of JavaScript's built-in `Error` class, often with additional properties specific to Mongoose operations.
+
+**Common Types of Mongoose Errors:**
+
+1.  **`CastError`:** This is the specific error type mentioned in the code snippet you provided.
+
+    - **Cause:** This happens when you try to convert a value to a specific type defined in your Mongoose schema, but the provided value is invalid for that type.
+    - **Example:** Your schema defines a field `bootcampId` of type `mongoose.Schema.Types.ObjectId`. You try to find a document using `Model.findById(someValue)`, but `someValue` is not a valid ObjectId string (e.g., it's `"abc123"`, `"123"`, or `null`).
+    - **Properties:**
+      - `name`: "CastError"
+      - `message`: Describes the type conversion failure (e.g., "Cast to ObjectId failed for value "abc123" at path "id"").
+      - `kind`: The type it was trying to cast to (e.g., "ObjectId").
+      - `path`: The field name or path where the error occurred (e.g., "\_id", "bootcampId").
+      - `value`: The invalid value that couldn't be cast.
+
+2.  **`ValidationError`:** This occurs when data being saved to the database doesn't meet the validation rules defined in your Mongoose schema.
+
+    - **Cause:** You might be trying to save a document where a required field is missing, a string is too long/short, a number is out of range, an email format is invalid, etc.
+    - **Properties:**
+      - `name`: "ValidationError"
+      - `errors`: An object where keys are the field names that failed validation, and values are individual validation error objects (which often have a `message` and `path`).
+
+let's dive deeper into **Mongoose `ValidationError`**.
+
+As mentioned before, a `ValidationError` occurs when data you're trying to save (using methods like `.save()`, `.create()`, `.updateOne()`, `.updateMany()`) doesn't meet the validation rules you've defined in your Mongoose **Schema**.
+
+Think of it like this: Your Mongoose Schema is a blueprint for your data. You add rules to this blueprint (validations). When you try to build something (save data) according to that blueprint, Mongoose checks if the provided data follows all the rules. If it doesn't, a `ValidationError` is thrown.
+
+**How Validations are Defined:**
+
+You define validations directly within your Schema's field definitions, using the `validate` property or built-in validator types.
+
+```javascript
+import mongoose from "mongoose";
+const Schema = mongoose.Schema;
+
+const userSchema = new Schema({
+  name: {
+    type: String,
+    required: [true, "Name is required"], // Built-in 'required' validator
+    minlength: [3, "Name must be at least 3 characters long"], // Built-in 'minlength'
+    maxlength: 50,
+  },
+  email: {
+    type: String,
+    required: [true, "Email is required"],
+    // Built-in 'match' validator (regular expression)
+    match: [/.+\@.+\..+/, "Please enter a valid email address"],
+  },
+  age: {
+    type: Number,
+    min: [18, "You must be at least 18 years old"], // Built-in 'min'
+    max: 120,
+  },
+  role: {
+    type: String,
+    // Built-in 'enum' validator (must be one of these values)
+    enum: ["user", "admin", "moderator"],
+    default: "user",
+  },
+  createdAt: {
+    type: Date,
+    // Custom validator function
+    validate: {
+      validator: function (value) {
+        // Ensure createdAt is not in the future
+        return value <= new Date();
+      },
+      message: (props) =>
+        `${props.value} is not a valid date. createdAt cannot be in the future.`,
+    },
+  },
+  // Example using 'validate' directly for a boolean
+  isActive: {
+    type: Boolean,
+    validate: {
+      validator: function (value) {
+        // Ensure isActive is true if age is less than 30 (just an example rule)
+        return this.age >= 30 || value === true;
+      },
+      message: "Users under 30 must have isActive set to true.",
+    },
+  },
+});
+
+const User = mongoose.model("User", userSchema);
+```
+
+**Properties of a `ValidationError` Object:**
+
+When a validation fails, Mongoose throws an error object of type `mongoose.Error.ValidationError`. This object has several important properties:
+
+1.  **`name`**: Always set to `"ValidationError"`.
+2.  **`message`**: A general message summarizing that validation failed (e.g., "Validation failed"). Often, it's more descriptive if specific field errors are present.
+3.  **`errors`**: This is the most crucial property. It's an object where:
+    - The **keys** are the **names of the fields** that failed validation.
+    - The **values** are **individual error objects** for each failed field. These individual errors are instances of subclasses like `ValidatorError`, `CastError` (if type conversion failed _before_ validation), etc.
+
+**Properties of Individual Field Errors (within `errors`):**
+
+Each error object within the `errors` property typically has:
+
+1.  **`message`**: A human-readable string explaining _why_ that specific field failed validation (e.g., "Name is required", "Email must be a valid email address", "Age must be at least 18").
+2.  **`name`**: The type of validation error (e.g., "ValidatorError").
+3.  **`path`**: The name of the field that failed validation (e.g., "name", "email", "age").
+4.  **`kind`**: Often relates to the specific built-in validator used (e.g., "required", "minlength", "enum", "user defined"). Can be useful for programmatic handling.
+5.  **`value`**: The actual value that caused the validation to fail.
+
+**Example Scenario:**
+
+Let's try to create a user with invalid data:
+
+```javascript
+try {
+  const newUser = new User({
+    name: "Jo", // Too short (minlength 3)
+    email: "not-an-email", // Doesn't match email regex
+    age: 15, // Below minimum age (min 18)
+    role: "superuser", // Not in enum ['user', 'admin', 'moderator']
+  });
+
+  await newUser.save(); // This will trigger validation
+} catch (err) {
+  if (err.name === "ValidationError") {
+    console.error("Validation Error Occurred:");
+    console.error(err.message); // Might be generic like "Validation failed"
+
+    // Iterate through specific field errors
+    for (const field in err.errors) {
+      console.error(`Field: ${field}`);
+      console.error(`  Error Message: ${err.errors[field].message}`);
+      console.error(`  Error Kind: ${err.errors[field].kind}`);
+      console.error(`  Invalid Value: ${err.errors[field].value}`);
+      console.error("---");
+    }
+
+    // Or access specific errors directly if you know the field name
+    // console.error(err.errors.name.message); // "Jo" is too short
+    // console.error(err.errors.email.message); // "not-an-email" is invalid
+    // console.error(err.errors.age.message); // 15 is too young
+    // console.error(err.errors.role.message); // "superuser" is not allowed
+
+    // You could then format this information into a user-friendly response
+    const errorDetails = {};
+    for (const field in err.errors) {
+      errorDetails[field] = err.errors[field].message;
+    }
+    // res.status(400).json({ success: false, errors: errorDetails });
+  } else {
+    // Handle other types of errors
+    console.error("Other Error:", err);
+  }
+}
+```
+
+**In Summary:**
+
+- `ValidationError` is Mongoose's way of telling you that data didn't pass the rules defined in your schema.
+- It's triggered during save/update operations.
+- It contains an `errors` object mapping field names to specific error details.
+- Each field error has a `message`, `path`, `kind`, and `value`.
+- You catch this error in your Express error handling middleware to provide specific feedback to the user (e.g., "Please enter a valid email" instead of a generic server error).
+
+3.  **`DocumentNotFoundError` (or similar):** While not always a named error class itself, operations like `findOne`, `findById`, etc., return `null` or `undefined` if no document matches the query criteria. Sometimes, libraries or specific Mongoose versions might throw an error or provide a specific object indicating the document wasn't found, especially in certain middleware contexts.
+
+4.  **`MongoError` (or `MongoServerError` in newer Mongoose versions):** These errors originate directly from the underlying MongoDB driver. They represent issues at the database level, such as:
+    - Connection problems.
+    - Duplicate key violations (if you try to insert a document with a value that violates a unique index).
+    - Permission issues.
+    - Database server errors.
+
+let's outline the "blueprint" or structure of a typical Mongoose error object. Keep in mind that the exact structure can vary slightly depending on the specific type of error (`ValidationError`, `CastError`, `MongoServerError`, etc.), but this covers the common elements.
+
+The root Mongoose error object is generally an instance of `Error` (or a subclass like `mongoose.Error.ValidationError`). It usually follows this structure:
+
+```javascript
+// Pseudocode representation of a Mongoose Error Object
+const mongooseError = {
+  // Standard JavaScript Error properties
+  name: "Error Type (e.g., 'ValidationError', 'CastError', 'MongoServerError')",
+  message: "A general description of the error",
+  stack: "A stack trace showing where the error was thrown (standard JS Error property)",
+
+  // --- Mongoose Specific Properties ---
+
+  // Present on ValidationErrors
+  errors: {
+    // Key: The name of the field that failed validation
+    fieldName1: {
+      // Properties of the specific field validation error
+      message: "Human-readable error message for this field (e.g., 'Path `email` is invalid.')",
+      name: "Type of validation error (e.g., 'ValidatorError')",
+      path: "The field name that failed (e.g., 'email')",
+      value: "The invalid value that caused the failure (e.g., 'invalid-email')",
+      kind: "Specific kind of validator (e.g., 'regexp', 'required', 'enum')",
+      properties: { // Often contains the same info as above, sometimes more
+        message: "...",
+        type: "e.g., 'required', 'user defined', 'regexp'",
+        path: "...",
+        value: "..."
+      }
+      // ... potentially other properties depending on the validator
+    },
+    fieldName2: {
+      // Another field's error object structure
+      message: "...",
+      name: "...",
+      path: "...",
+      value: "...",
+      kind: "...",
+      properties: { ... }
+    },
+    // ... more fields that failed
+  },
+
+  // Present on CastErrors
+  value: "The value that couldn't be cast (e.g., 'invalid-id')",
+  path: "The field name/path where casting failed (e.g., '_id')",
+  reason: "Sometimes contains the underlying MongoDB driver error (optional)",
+
+  // Present on some errors (like MongoServerError wrapped by Mongoose)
+  code: "A numerical error code from MongoDB (e.g., 11000 for duplicate key error)",
+  // ... potentially other MongoDB-specific properties
+
+  // --- Methods (may vary) ---
+  // Some errors might have specific methods, but generally, you access properties.
+};
+```
+
+**Key Points about the Blueprint:**
+
+1.  **Inherits from `Error`:** All Mongoose errors are JavaScript `Error` objects, so they always have `name`, `message`, and `stack`.
+2.  **Error Type (`name`):** This is crucial for identifying _what kind_ of Mongoose error occurred (e.g., `ValidationError`, `CastError`).
+3.  **General Message (`message`):** Provides a high-level description. For `ValidationError`, this might be generic ("Validation failed"), while for `CastError`, it often includes details about the casting failure.
+4.  **Specific Details:**
+    - **`ValidationError`:** The `errors` object is the core. It's a map of field names to individual error objects for those fields.
+    - **`CastError`:** `value`, `path`, and sometimes `kind` are key properties.
+    - **`MongoServerError`:** Often includes a `code` property from MongoDB.
+5.  **Human-Readable Messages:** The `message` property (especially within `ValidationError.errors[field].message`) is typically the most useful for displaying to users or logging in a user-friendly way.
+6.  **`stack`:** Always useful for debugging, showing where in your code the error originated.
+
+When writing error handling middleware in Express (like the one you initially shared), you often check `err.name` to determine the type of error and then access the relevant properties (`err.errors`, `err.value`, `err.code`, etc.) to construct an appropriate response.
+
+3. add the duplicate key error handler, this time testing from 'post' api
+
+```js
+import chalk from "chalk";
+import ErrorResponse from "../utils/errorResponse.js";
+const errorHandler = (err, req, res, next) => {
+  let error = { ...err };
+  error.message = err.message;
+  // log to console for dev
+  console.log(chalk.red(err.stack));
+  // Mongoose bad ObjectId
+  if (err.name === "CastError") {
+    const message = `Bootcamp not found with id of ${err.value}`;
+    error = new ErrorResponse(message, 404);
+  }
+
+  // Mongoose duplicate key
+  if (err.code === 11000) {
+    const message = "Duplicate field value entered";
+    error = new ErrorResponse(message, 400);
+  }
+  res.status(error.statusCode || 500).json({
+    success: false,
+    error: error.message || "Server Error",
+  });
+};
+
+export default errorHandler;
+```
+
+4. validate error, we want to extract the error object value from the error object
+
+```js
+// Mongoose validation error
+if (err.name === "ValidationError") {
+  const message = Object.values(err.errors).map((val) => val.message);
+  error = new ErrorResponse(message, 400);
+}
+```
+
+5. in the post, enter an empty object.
+6. postman will return
+
+```json
+{
+  "success": false,
+  "error": "Please add an address,Please add a description,Please add a name"
+}
+```
+
+7. the error message is from model's required validator field
