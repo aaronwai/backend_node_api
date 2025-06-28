@@ -5,7 +5,9 @@
 1. npm init -y
 2. npm install express, dotenv
 3. npm install nodemon -D
-4. update the package.json
+4. update the package.jso
+
+n
 
 ```json
 {
@@ -579,9 +581,12 @@ router.put("/api/v1/bootcamps/:id", (req, res) => {
 });
 
 router.delete("/api/v1/bootcamps/:id", (req, res) => {
-  res
-    .status(200)
-    .json({ success: true, msg: `delete bootcamp ${req.params.id}` });
+  re;
+
+  s.status(200).json({
+    success: true,
+    msg: `delete bootcamp ${req.params.id}`,
+  });
 });
 
 export default router;
@@ -1153,18 +1158,21 @@ app.use((err, req, res, next) => {
 ### **11. Best Practices**
 
 1. **Order matters**: Place critical middleware first (e.g., CORS, security)
-2. **Terminate early**: Fail fast for invalid requests
-3. **Use async safely**: Handle promises with `try/catch` or `next(err)`
-   ```javascript
-   app.use(async (req, res, next) => {
-     try {
-       await someAsyncTask();
-       next();
-     } catch (err) {
-       next(err);
-     }
-   });
-   ```
+2. **Terminate early**: Fail fast for invalid
+
+requests 3. **Use async safely**: Handle promises with `try/catch` or `next(err)`
+
+```javascript
+app.use(async (req, res, next) => {
+  try {
+    await someAsyncTask();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+```
+
 4. **Avoid blocking**: Offload CPU-heavy tasks to worker threads
 5. **Modularize**: Organize middleware into separate files
 
@@ -2301,7 +2309,9 @@ dotenv.config({ path: "./config/config.env" });
 // connect to database
 connectDB();
 const app = express();
-// add middleware
+// add middlewar
+
+e;
 // app.use(logger);
 // Dev logging middleware
 if (process.env.NODE_ENV === "development") {
@@ -2709,14 +2719,18 @@ export const createBootcamp = async (req, res, next) => {
 // @route PUT /api/v1/bootcamps/:id
 // @access Private
 export const updateBootcamp = async (req, res, next) => {
-  const bootcamp = await Bootcamp.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  });
-  if (!bootcamp) {
-    return res.status(400).json({ success: false });
+  try {
+    const bootcamp = await Bootcamp.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!bootcamp) {
+      return res.status(400).json({ success: false });
+    }
+    res.status(200).json({ success: true, data: bootcamp });
+  } catch (error) {
+    res.status(400).json({ success: false });
   }
-  res.status(200).json({ success: true, data: bootcamp });
 };
 
 // @desc Delete bootcamp
@@ -2737,7 +2751,7 @@ export const deleteBootcamp = async (req, res, next) => {
 
 # step 19 : middlewares
 
-1. from one of the CRUD function, add next()
+1. from one of the CRUD function, add next() getBootcamp function
 
 ```js
 import Bootcamp from "../models/Bootcamp.js";
@@ -2787,14 +2801,18 @@ export const createBootcamp = async (req, res, next) => {
 // @route PUT /api/v1/bootcamps/:id
 // @access Private
 export const updateBootcamp = async (req, res, next) => {
-  const bootcamp = await Bootcamp.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  });
-  if (!bootcamp) {
-    return res.status(400).json({ success: false });
+  try {
+    const bootcamp = await Bootcamp.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!bootcamp) {
+      return res.status(400).json({ success: false });
+    }
+    res.status(200).json({ success: true, data: bootcamp });
+  } catch (error) {
+    res.status(400).json({ success: false });
   }
-  res.status(200).json({ success: true, data: bootcamp });
 };
 
 // @desc Delete bootcamp
@@ -2814,10 +2832,10 @@ export const deleteBootcamp = async (req, res, next) => {
 ```
 
 2. replace res.status(400).json({ success: false }); with next(error) in getBootcamp,
-3. testing the api by pasting a wrong id, the return will be http message, we want to change the error to our error handler
+3. testing the api by pasting a wrong id in postman, mongoose returns http message, we want to change the error to our error handler
 4. add error.js inside middleware folder
 
-```js
+```js error.js
 import chalk from "chalk";
 const errorHandler = (err, req, res, next) => {
   // log to console for dev
@@ -2832,7 +2850,20 @@ const errorHandler = (err, req, res, next) => {
 export default errorHandler;
 ```
 
-5. in the server.js add the app.use() under the router, it is the router generate error
+5. In the context of the provided Express.js error handling middleware, `err.stack` refers to the stack trace of the error object (`err`). The stack trace is a detailed report that shows the sequence of function calls that led to the error. It includes information about the file, line number, and function names where the error occurred.
+
+Here's a breakdown of what `err.stack` typically looks like:
+
+```plaintext
+Error: Some error message
+    at /path/to/file.js:10:15
+    at Layer.handle [as handle_request] (/path/to/express.js:100:12)
+    at next (/path/to/express.js:105:13)
+    at /path/to/middleware.js:20:10
+    at processImmediate [as _immediateCallback] (timers.js:719:5)
+```
+
+6. in the server.js add the app.use() under the router, it is the router generate error
 
 ```js
 import express from "express";
@@ -2854,7 +2885,9 @@ const app = express();
 app.use(express.json());
 // add middleware
 // app.use(logger);
-// Dev logging middleware
+// Dev logging middlewar
+
+e;
 if (process.env.NODE_ENV === "development") {
   app.use(coloredMorgan());
 }
@@ -2878,7 +2911,7 @@ process.on("unhandledRejection", (err, promise) => {
 });
 ```
 
-6. the error message will be shown in the postman
+7. the error message will be shown in the postman
 
 ```
    {
@@ -2889,10 +2922,11 @@ process.on("unhandledRejection", (err, promise) => {
 
 # step 20 : error class
 
-1. create utils folder at the root
-2. errorResponse.js
+1. create utils folder at the root to build a class, since the class isn't related to app's model, we place it in the utils folder
+2. build a custom error class by extending Error. This class will be used to create custom error responses.
+3. errorResponse.js
 
-```js
+```js errorResponse.js
 class ErrorResponse extends Error {
   constructor(message, statusCode) {
     super(message);
@@ -2903,7 +2937,28 @@ class ErrorResponse extends Error {
 export default ErrorResponse;
 ```
 
-3. bootcamps.js change the error message
+3. `ErrorResponse` class, you are indeed **replacing** the default error message and status code that Express might generate with your own.
+
+Here's a breakdown of what happens:
+
+1.  **Default Express Errors:** When something goes wrong _within_ Express (e.g., a route handler throws a `throw new Error("Oops")` without being caught, or Express encounters an internal issue), Express creates an error object. This object _might_ have a `message` property ("Oops" in the example) and Express _might_ assign a default status code (like 500) to the response.
+
+2.  **Your Custom `ErrorResponse`:** Your class `ErrorResponse` extends the built-in `Error` class. When you create an instance like `new ErrorResponse("Custom message", 404)`, you are:
+
+    - Calling the parent `Error` constructor with your specific message (`"Custom message"`). This sets the `.message` property of your error object.
+    - Adding your own `.statusCode` property (`404` in this case).
+
+3.  **Passing to Middleware:** When you pass your custom error instance to `next(error)` in a route or middleware, you are explicitly telling Express, "Here is the error object you should use for handling this failure."
+
+4.  **Error Handling Middleware:** Your error handling middleware (`(err, req, res, next) => { ... }`) receives _your_ `ErrorResponse` object.
+    - `err.message` will be the string you provided ("Custom message").
+    - `err.statusCode` will be the number you provided (404).
+    - Express will use the `err.statusCode` (or fall back to 500 if it's not present) to set the HTTP status code of the response.
+    - Express will use the `err.message` to populate the JSON response body.
+
+**In short:** By using `ErrorResponse`, you gain control over the error message and status code that the client receives, making your error responses more specific and meaningful for your application's needs, rather than relying on potentially generic Express defaults or raw JavaScript errors.
+
+4. in bootcamps.js, we can bring in our own errorResponse object into next()
 
 ```js
 import Bootcamp from "../models/Bootcamp.js";
@@ -2936,7 +2991,7 @@ export const getBootcamp = async (req, res, next) => {
     }
     res.status(200).json({ success: true, data: bootcamp });
   } catch (error) {
-    // replace simply error to custom error
+    // refactor : replace simply error to custom error
     next(
       new ErrorResponse(`Bootcamp not found with id of ${req.params.id}`, 404)
     );
@@ -2959,14 +3014,18 @@ export const createBootcamp = async (req, res, next) => {
 // @route PUT /api/v1/bootcamps/:id
 // @access Private
 export const updateBootcamp = async (req, res, next) => {
-  const bootcamp = await Bootcamp.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  });
-  if (!bootcamp) {
-    return res.status(400).json({ success: false });
+  try {
+    const bootcamp = await Bootcamp.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!bootcamp) {
+      return res.status(400).json({ success: false });
+    }
+    res.status(200).json({ success: true, data: bootcamp });
+  } catch (error) {
+    next(error);
   }
-  res.status(200).json({ success: true, data: bootcamp });
 };
 
 // @desc Delete bootcamp
@@ -2983,4 +3042,432 @@ export const deleteBootcamp = async (req, res, next) => {
     return res.status(400).json({ success: false });
   }
 };
+```
+
+# step 21 : error type
+
+1. there are different type of error
+   In Express.js, the `err.name` property typically comes from JavaScript's built-in `Error` objects or from specific error types defined by libraries/databases you're using (like Mongoose, Sequelize, JWT, etc.). Here's a breakdown of common `err.name` values you might encounter:
+
+---
+
+### **1. Built-in JavaScript Error Names**
+
+| Error Name       | Description                                |
+| ---------------- | ------------------------------------------ |
+| `Error`          | Generic error (base type)                  |
+| `SyntaxError`    | Invalid JavaScript syntax                  |
+| `ReferenceError` | Accessing an undefined variable            |
+| `TypeError`      | Operation on a value of wrong type         |
+| `RangeError`     | Value outside allowed range (e.g., array)  |
+| `URIError`       | Invalid URI handling (e.g., `decodeURI()`) |
+| `EvalError`      | `eval()` function error (rare)             |
+
+---
+
+### **2. Common Express.js/Node.js Error Names**
+
+| Error Name          | Common Source                    | Description                                          |
+| ------------------- | -------------------------------- | ---------------------------------------------------- |
+| `CastError`         | Mongoose (MongoDB)               | Invalid data type casting (e.g., string to ObjectId) |
+| `ValidationError`   | Mongoose, Joi, Express Validator | Data validation failure                              |
+| `JsonWebTokenError` | `jsonwebtoken` library           | Invalid/malformed JWT token                          |
+| `TokenExpiredError` | `jsonwebtoken` library           | Expired JWT token                                    |
+| `MongoError`        | MongoDB native driver            | General database error (e.g., duplicate key)         |
+| `MulterError`       | `multer` (file upload)           | File upload error                                    |
+| `NotFoundError`     | Custom/ORM errors                | Resource not found (common in REST APIs)             |
+
+---
+
+### **3. Custom Error Names (Framework/Library-Specific)**
+
+Libraries often define custom errors:
+
+- **Mongoose**: `CastError`, `ValidationError`, `ValidatorError`, `ParallelSaveError`
+- **Sequelize**: `SequelizeValidationError`, `SequelizeUniqueConstraintError`
+- **Passport.js**: `AuthenticationError`
+
+---
+
+### **Example Error Handler with Chalk**
+
+Here's how to log `err.name` and `err.message` with colors using `chalk`:
+
+```javascript
+import chalk from "chalk";
+
+const errorHandler = (err, req, res, next) => {
+  // Colorize different parts of the error
+  console.error(
+    chalk.bgRed.white.bold(` ERROR `) +
+      " " +
+      chalk.red.bold(`${err.name}:`) +
+      " " +
+      chalk.yellow(err.message) +
+      "\n" +
+      chalk.gray(err.stack) // Stack trace in gray
+  );
+
+  // Send response to client
+  res.status(err.statusCode || 500).json({
+    success: false,
+    error: err.message,
+  });
+};
+
+export default errorHandler;
+```
+
+---
+
+### **Key Notes**
+
+1. **`err.name` is not HTTP-related**:  
+   It describes the error type, not the HTTP status. Handle status codes separately (e.g., `err.statusCode`).
+
+2. **Handle specific errors**:
+
+   ```javascript
+   if (err.name === "ValidationError") {
+     res.status(400); // Bad Request
+   } else if (err.name === "UnauthorizedError") {
+     res.status(401); // Unauthorized
+   }
+   ```
+
+3. **Always log the stack trace**:
+
+   ```javascript
+   console.error(chalk.red(err.stack)); // Full stack trace for debugging
+   ```
+
+4. **Security**: Avoid exposing sensitive error details to clients in production.
+
+For robust error handling, use libraries like [`http-errors`](https://www.npmjs.com/package/http-errors) to create standardized errors with HTTP status codes.
+
+2. err object
+   In Express.js, the `err` object passed to error-handling middleware can contain various properties beyond just `name`. Here's a comprehensive breakdown of common properties you might encounter:
+
+### Core JavaScript Error Properties
+
+| Property  | Description                                                       |
+| --------- | ----------------------------------------------------------------- |
+| `name`    | Error type/name (e.g., `Error`, `TypeError`, `ValidationError`)   |
+| `message` | Human-readable error description                                  |
+| `stack`   | Full stack trace (development only - **never expose to clients**) |
+
+### Express.js-Specific Properties
+
+| Property | Description                                                                     |
+| -------- | ------------------------------------------------------------------------------- |
+| `status` | HTTP status code (alias: `statusCode`) - **Most important for APIs**            |
+| `expose` | Boolean indicating if `message` can be sent to client (default: `status < 500`) |
+
+### Common Library/ORM Extensions
+
+**Mongoose (MongoDB):**
+
+```javascript
+{
+  name: 'ValidationError',
+  message: 'Validation failed',
+  errors: {
+    email: {
+      message: 'Invalid email format',
+      path: 'email',
+      value: 'invalid-email',
+      kind: 'regexp'
+    }
+  },
+  statusCode: 400,
+  status: 400
+}
+```
+
+**JWT Errors (`jsonwebtoken`):**
+
+```javascript
+{
+  name: 'TokenExpiredError',
+  message: 'jwt expired',
+  expiredAt: '2023-06-01T00:00:00.000Z',
+  status: 401
+}
+```
+
+**MongoDB Driver:**
+
+```javascript
+{
+  name: 'MongoServerError',
+  code: 11000,  // Duplicate key error
+  keyValue: { email: 'user@exists.com' },
+  status: 409
+}
+```
+
+**Sequelize (SQL):**
+
+```javascript
+{
+  name: 'SequelizeUniqueConstraintError',
+  errors: [{
+    message: 'email must be unique',
+    path: 'email',
+    value: 'duplicate@email.com'
+  }],
+  status: 409
+}
+```
+
+### Custom Error Pattern (Recommended)
+
+Most production apps extend errors with:
+
+```javascript
+class AppError extends Error {
+  constructor(message, statusCode) {
+    super(message);
+    this.statusCode = statusCode;
+    this.status = `${statusCode}`.startsWith("4") ? "fail" : "error";
+    this.isOperational = true; // Distinguishes handled vs critical errors
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
+
+// Usage: throw new AppError('Resource not found', 404);
+```
+
+### Enhanced Error Handler Example
+
+```javascript
+import chalk from "chalk";
+
+const errorHandler = (err, req, res, next) => {
+  // Status code setup
+  err.statusCode = err.statusCode || 500;
+  err.status = err.status || "error";
+
+  // Development logging
+  if (process.env.NODE_ENV === "development") {
+    console.error(chalk.red.bold("\n--- ERROR DETAILS ---"));
+    console.error(chalk.red.bold("NAME:    "), chalk.red(err.name));
+    console.error(chalk.red.bold("MESSAGE: "), chalk.yellow(err.message));
+    console.error(chalk.red.bold("STATUS:  "), chalk.magenta(err.statusCode));
+
+    if (err.errors) {
+      console.error(chalk.red.bold("SUB-ERRORS:"));
+      Object.values(err.errors).forEach((subErr) => {
+        console.error(
+          `  ${chalk.cyan(subErr.path)}:`,
+          chalk.yellow(subErr.message)
+        );
+      });
+    }
+
+    console.error(chalk.gray("\nSTACK TRACE:\n"), chalk.gray(err.stack));
+    console.error(chalk.red.bold("-------------------\n"));
+  }
+
+  // Client response
+  const response = {
+    status: err.status,
+    message: err.message,
+  };
+
+  // Add validation errors in development
+  if (process.env.NODE_ENV === "development" && err.errors) {
+    response.errors = Object.entries(err.errors).reduce(
+      (acc, [path, error]) => {
+        acc[path] = error.message;
+        return acc;
+      },
+      {}
+    );
+  }
+
+  res.status(err.statusCode).json(response);
+};
+
+export default errorHandler;
+```
+
+### Key Security Notes
+
+1. **Never expose stack traces** in production
+2. **Sanitize database errors** - don't leak schema details
+3. **Handle uncaught exceptions** separately:
+   ```javascript
+   process.on("uncaughtException", (err) => {
+     console.error("CRITICAL UNHANDLED ERROR", err);
+     process.exit(1);
+   });
+   ```
+4. For production, consider using:
+   ```javascript
+   // Client response in production
+   if (err.isOperational) {
+     res.status(err.statusCode).json({
+       /* safe details */
+     });
+   } else {
+     // Generic message for critical errors
+     res.status(500).json({ status: "error", message: "Something went wrong" });
+   }
+   ```
+
+This structure gives you rich debugging info in development while maintaining security and usability in production.
+
+# step 22 : Mongoose error handling
+
+1. so far we pass the same error into the error handler class, we can extend the error class further, at the current stage, we can't classify the errors, we can refactor the error.
+2. there are different types of errors, we test the CastError, ValidationError, etc.
+
+```js error.js
+import chalk from "chalk";
+import ErrorResponse from "../utils/errorResponse.js";
+const errorHandler = (err, req, res, next) => {
+  let error = { ...err };
+  error.message = err.message;
+  // log to console for dev
+  console.log(chalk.red(err.stack));
+  // Mongoose bad ObjectId
+  if (err.name === "CastError") {
+    const message = `Bootcamp not found with id of ${err.value}`;
+    error = new ErrorResponse(message, 404);
+  }
+
+  res.status(error.statusCode || 500).json({
+    success: false,
+    error: error.message || "Server Error",
+  });
+};
+
+export default errorHandler;
+```
+
+### 1. Creating a Shallow Copy of the Error Object
+
+```javascript
+let error = { ...err };
+error.message = err.message;
+```
+
+- `let error = { ...err };` creates a shallow copy of the original error object (`err`). This is done to avoid mutating the original error object.
+- `error.message = err.message;` ensures that the `message` property of the copied error object is set to the same value as the original error's `message` property.
+
+### 2. Handling Mongoose CastError
+
+```javascript
+// Mongoose bad ObjectId
+if (err.name === "CastError") {
+  const message = `Bootcamp not found with id of ${err.value}`;
+  error = new ErrorResponse(message, 404);
+}
+```
+
+- This block checks if the error is a Mongoose `CastError`, which typically occurs when an invalid ObjectId is provided.
+- If it is a `CastError`, it creates a new instance of `ErrorResponse` with a custom message indicating that the bootcamp was not found and sets the status code to 404 (Not Found).
+- The `error` variable is then updated to this new `ErrorResponse` instance.
+
+### Summary
+
+This middleware function handles errors in an Express.js application by:
+
+1. Creating a copy of the error object.
+2. Logging the error stack trace to the console for debugging.
+3. Checking for specific types of errors (like Mongoose `CastError`) and creating custom error responses.
+4. Sending an appropriate HTTP status code and error message to the client.
+
+5. testing just the catch error block in postman, the error is handled by the error handler middleware.
+6. replace all the catch error block back to next(err).
+
+```js
+import Bootcamp from "../models/Bootcamp.js";
+import ErrorResponse from "../utils/errorResponse.js";
+// @desc Get all bootcamps
+// @route GET /api/v1/bootcamps
+// @access Public
+export const getBootcamps = async (req, res, next) => {
+  try {
+    const bootcamps = await Bootcamp.find();
+    res
+      .status(200)
+      .json({ success: true, count: bootcamps.length, data: bootcamps });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc Get  bootcamp
+// @route GET /api/v1/bootcamp/:id
+// @access Public
+export const getBootcamp = async (req, res, next) => {
+  try {
+    const bootcamp = await Bootcamp.findById(req.params.id);
+    if (!bootcamp) {
+      return next(
+        new ErrorResponse(`Bootcamp not found with id of ${req.params.id}`, 404)
+      );
+    }
+    res.status(200).json({ success: true, data: bootcamp });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc Create new bootcamp
+// @route POST /api/v1/bootcamps
+// @access Private
+export const createBootcamp = async (req, res, next) => {
+  try {
+    const bootcamp = await Bootcamp.create(req.body);
+    res.status(201).json({ success: true, data: bootcamp });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc Update bootcamp
+// @route PUT /api/v1/bootcamps/:id
+// @access Private
+export const updateBootcamp = async (req, res, next) => {
+  try {
+    const bootcamp = await Bootcamp.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!bootcamp) {
+      return res.status(400).json({ success: false });
+    }
+    res.status(200).json({ success: true, data: bootcamp });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc Delete bootcamp
+// @route DELETE /api/v1/bootcamps/:id
+// @access Private
+export const deleteBootcamp = async (req, res, next) => {
+  try {
+    const bootcamp = await Bootcamp.findByIdAndDelete(req.params.id);
+    if (!bootcamp) {
+      return res.status(400).json({ success: false });
+    }
+    res.status(200).json({ success: true, data: bootcamp });
+  } catch (error) {
+    next(error);
+  }
+};
+```
+
+7. for the non catch block, update with errorResponse object for !bootcamp block
+
+```js
+if (!bootcamp) {
+  return next(
+    new ErrorResponse(`Bootcamp not found with id of ${req.params.id}`, 404)
+  );
+}
 ```
