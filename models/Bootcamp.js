@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import slugify from "slugify";
 const BootcampSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -99,4 +100,9 @@ const BootcampSchema = new mongoose.Schema({
   },
 });
 
+// Create slug from name
+BootcampSchema.pre("save", function (next) {
+  this.slug = slugify(this.name, { lower: true });
+  next();
+});
 export default mongoose.model("Bootcamp", BootcampSchema);

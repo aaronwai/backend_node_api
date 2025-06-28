@@ -2450,6 +2450,7 @@ export default mongoose.model("Bootcamp", BootcampSchema);
 # Step 16 : bootcamp crud
 
 1. back to controllers folder->bootcamps.js, insert bootcamp model
+2. for the getBootcamps, if there is no data, we don't want to return error, we want to return empty array which is ok.
 
 ```js
 import Bootcamp from "../models/Bootcamp.js";
@@ -2490,9 +2491,9 @@ export const deleteBootcamp = (req, res, next) => {
 };
 ```
 
-2. postman, workon Post, create a new preset for the header (7.png) that can help saving time to type in the same content type
-3. in the body, copy one of the record and paste into the body
-4. in the server.js, need to add body parser
+3. postman, workon Post, create a new preset for the header (7.png) that can help saving time to type in the same content type
+4. in the body, copy one of the record and paste into the body
+5. in the server.js, need to add body parser
 
 ```js
 import express from "express";
@@ -2533,10 +2534,10 @@ process.on("unhandledRejection", (err, promise) => {
 });
 ```
 
-5. the data show be in the console
-6. refactor the controller by adding the data into database
-7. data should be inserted inside mongoDB
-8. in case there is error, we add try catch for the time being, later will add error handling
+6. the data show be in the console
+7. refactor the controller by adding the data into database
+8. data should be inserted inside mongoDB
+9. in case there is error, we add try catch for the time being, later will add error handling
 
 ```js
 import Bootcamp from "../models/Bootcamp.js";
@@ -3870,3 +3871,121 @@ export const deleteBootcamp = asyncHandler(async (req, res, next) => {
 ```
 
 4. test api in postman again
+
+# step 25 : mongoose middleware slugify
+
+1. `npm install slugify`
+2. in the model, import slugify, at the bottom at the pre middleware, make sure don't use arrow function, because there is a this inside the function, use regular function for the to take care of the this
+
+```js
+import mongoose from "mongoose";
+import slugify from "slugify";
+const BootcampSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, "Please add a name"],
+    unique: true,
+    trim: true,
+    maxlength: [50, "Name can not be more than 50 characters"],
+  },
+  slug: String,
+  description: {
+    type: String,
+    required: [true, "Please add a description"],
+    maxlength: [500, "Description can not be more than 500 characters"],
+  },
+  website: {
+    type: String,
+    match: [
+      /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/,
+      "Please use a valid URL with HTTP or HTTPS",
+    ],
+  },
+  phone: {
+    type: String,
+    maxlength: [20, "Phone number can not be longer than 20 characters"],
+  },
+  email: {
+    type: String,
+    match: [
+      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+      "Please add a valid email",
+    ],
+  },
+  address: {
+    type: String,
+    required: [true, "Please add an address"],
+  },
+  location: {
+    // GeoJSON Point
+    type: {
+      type: String,
+      enum: ["Point"],
+      default: "Point",
+    },
+    coordinates: {
+      type: [Number],
+      index: "2dsphere",
+      default: [0, 0],
+    },
+    formattedAddress: String,
+    street: String,
+    city: String,
+    state: String,
+    zipcode: String,
+    country: String,
+  },
+  careers: {
+    // Array of strings
+    type: [String],
+    required: true,
+    enum: [
+      "Web Development",
+      "Mobile Development",
+      "UI/UX",
+      "Data Science",
+      "Business",
+      "Other",
+    ],
+  },
+  averageRating: {
+    type: Number,
+    min: [1, "Rating must be at least 1"],
+    max: [10, "Rating must can not be more than 10"],
+  },
+  averageCost: Number,
+  photo: {
+    type: String,
+    default: "no-photo.jpg",
+  },
+  housing: {
+    type: Boolean,
+    default: false,
+  },
+  jobAssistance: {
+    type: Boolean,
+    default: false,
+  },
+  jobGuarantee: {
+    type: Boolean,
+    default: false,
+  },
+  acceptGi: {
+    type: Boolean,
+    default: false,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+// Create slug from name
+BootcampSchema.pre("save", function (next) {
+  this.slug = slugify(this.name, { lower: true });
+  next();
+});
+export default mongoose.model("Bootcamp", BootcampSchema);
+```
+
+3. the middleware demo is showing, how to convert the name into slug before saving to database
