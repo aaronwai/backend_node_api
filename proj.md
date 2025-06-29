@@ -3989,3 +3989,179 @@ export default mongoose.model("Bootcamp", BootcampSchema);
 ```
 
 3. the middleware demo is showing, how to convert the name into slug before saving to database
+
+# Step 26 : GeoJSON
+
+1. https://developer.mapquest.com/
+2. mapquest password : Mapquest.skxxxxxx
+3. google geocoder api : AIzaSyBJ5shB82-C1pv13nDUuWzAfl9ZDvmXxqE
+4. add the GEOCODER API key to the .env file
+
+```js
+NODE_ENV = development
+PORT = 5001
+MONGO_URI = mongodb+srv://aaronlungwai:1234@cluster0.26s1bk4.mongodb.net/devcamper?retryWrites=true&w=majority&appName=Cluster0
+
+GEOCODER_PROVIDER = google
+GEOCODER_API_KEY = AIzaSyBJ5shB82-C1pv13nDUuWzAfl9ZDvmXxqE
+```
+
+5. in util folder, create geocoder.js
+
+```js
+import NodeGeocoder from "node-geocoder";
+import dotenv from "dotenv";
+// load env variables
+dotenv.config({ path: "./config/config.env" });
+if (!process.env.GEOCODER_PROVIDER || !process.env.GEOCODER_API_KEY) {
+  console.error(
+    "Geocoder provider or API key is not set in environment variables."
+  );
+  process.exit(1); // Exit the process with an error code
+}
+
+const options = {
+  provider: process.env.GEOCODER_PROVIDER,
+  apiKey: process.env.GEOCODER_API_KEY,
+
+  //   provider: process.env.GEOCODER_PROVIDER,
+  //   apiKey: process.env.GEOCODER_API_KEY,
+  formatter: null,
+};
+console.log("Geocoder options:", options);
+export const geocoder = NodeGeocoder(options);
+```
+
+5. in the model file,
+
+```js
+import mongoose from "mongoose";
+import slugify from "slugify";
+import { geocoder } from "../utils/geocoder.js";
+const BootcampSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, "Please add a name"],
+    unique: true,
+    trim: true,
+    maxlength: [50, "Name can not be more than 50 characters"],
+  },
+  slug: String,
+  description: {
+    type: String,
+    required: [true, "Please add a description"],
+    maxlength: [500, "Description can not be more than 500 characters"],
+  },
+  website: {
+    type: String,
+    match: [
+      /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/,
+      "Please use a valid URL with HTTP or HTTPS",
+    ],
+  },
+  phone: {
+    type: String,
+    maxlength: [20, "Phone number can not be longer than 20 characters"],
+  },
+  email: {
+    type: String,
+    match: [
+      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+      "Please add a valid email",
+    ],
+  },
+  address: {
+    type: String,
+    required: [true, "Please add an address"],
+  },
+  location: {
+    // GeoJSON Point
+    type: {
+      type: String,
+      enum: ["Point"],
+      default: "Point",
+    },
+    coordinates: {
+      type: [Number],
+      index: "2dsphere",
+      default: [0, 0],
+    },
+    formattedAddress: String,
+    street: String,
+    city: String,
+    state: String,
+    zipcode: String,
+    country: String,
+  },
+  careers: {
+    // Array of strings
+    type: [String],
+    required: true,
+    enum: [
+      "Web Development",
+      "Mobile Development",
+      "UI/UX",
+      "Data Science",
+      "Business",
+      "Other",
+    ],
+  },
+  averageRating: {
+    type: Number,
+    min: [1, "Rating must be at least 1"],
+    max: [10, "Rating must can not be more than 10"],
+  },
+  averageCost: Number,
+  photo: {
+    type: String,
+    default: "no-photo.jpg",
+  },
+  housing: {
+    type: Boolean,
+    default: false,
+  },
+  jobAssistance: {
+    type: Boolean,
+    default: false,
+  },
+  jobGuarantee: {
+    type: Boolean,
+    default: false,
+  },
+  acceptGi: {
+    type: Boolean,
+    default: false,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+// Create slug from name
+BootcampSchema.pre("save", function (next) {
+  this.slug = slugify(this.name, { lower: true });
+  next();
+});
+
+// add geocoder middleware
+BootcampSchema.pre("save", async function (next) {
+  const loc = await geocoder.geocode(this.address);
+  this.location = {
+    type: "Point",
+    coordinates: [loc[0].longitude, loc[0].latitude],
+    formattedAddress: loc[0].formattedAddress,
+    street: loc[0].streetName,
+    city: loc[0].city,
+    state: loc[0].stateCode,
+    zipcode: loc[0].zipcode,
+    country: loc[0].countryCode,
+  };
+  // Do not save address
+  this.address = undefined;
+  next();
+});
+export default mongoose.model("Bootcamp", BootcampSchema);
+```
+
+6. since we use geocoder to get the coordinates, we don't need to save the address in the database.

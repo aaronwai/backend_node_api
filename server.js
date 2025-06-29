@@ -2,7 +2,6 @@ import express from "express";
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import bootcamps from "./routes/bootcamps.js";
-// import { logger } from "./middleware/logger.js";
 import { coloredMorgan } from "./middleware/morganConfig.js";
 import errorHandler from "./middleware/error.js";
 // load env variables
@@ -10,12 +9,13 @@ dotenv.config({ path: "./config/config.env" });
 
 // connect to database
 connectDB();
+
 const app = express();
 
 // body parser
 app.use(express.json());
 // add middleware
-// app.use(logger);
+
 // Dev logging middleware
 if (process.env.NODE_ENV === "development") {
   app.use(coloredMorgan());
